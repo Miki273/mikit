@@ -125,15 +125,15 @@ likertbar <- function(data,
 
   if (long_form == FALSE) {
     likert_data <- data |>
-      pivot_longer(cols = questions, names_to = "Question", values_to = "Response") |>
-      group_by(Question, Response) |>
-      summarise(Count = n(), .groups = "drop")
+      tidyr::pivot_longer(cols = questions, names_to = "Question", values_to = "Response") |>
+      dplyr::group_by(Question, Response) |>
+      dplyr::summarise(Count = n(), .groups = "drop")
   } else {
     if (ncol(data) < 3) {
       stop("The dataframe must have at least three columns if `long_form` is TRUE.")
     }
     likert_data <- data |>
-      rename("Question" = question_col, "Response" = response_col, "Count" = count_col)
+      dplyr::rename("Question" = question_col, "Response" = response_col, "Count" = count_col)
   }
 
   n <- nlevels(likert_data$Response)
@@ -149,21 +149,21 @@ likertbar <- function(data,
   if (!is.null(order_by)) {
     likert_data <- questionReorder(likert_data, n, diverging, order_by, extreme)
     likert_data$Question <- factor(likert_data$Question)
-    likert_data$Question <- fct_reorder(likert_data$Question, likert_data$order_count, .desc = TRUE)
+    likert_data$Question <- forcats::fct_reorder(likert_data$Question, likert_data$order_count, .desc = TRUE)
     if (horizontal == TRUE) {
-      likert_data$Question <- fct_rev(likert_data$Question)
+      likert_data$Question <- forcats::fct_rev(likert_data$Question)
     }
   }
 
   if (reverse == FALSE) {
-    likert_data$Response <- fct_rev(likert_data$Response)
+    likert_data$Response <- forcats::fct_rev(likert_data$Response)
   }
 
   if (include_na == FALSE) {
-    likert_data <- likert_data |> filter(!is.na(Response))
+    likert_data <- likert_data |> dplyr::filter(!is.na(Response))
   } else if (any(is.na(likert_data$Response))) {
-    likert_data$Response <- fct_na_value_to_level(likert_data$Response, na_label)
-    likert_data$Response <- fct_relevel(likert_data$Response, na_label)
+    likert_data$Response <- forcats::fct_na_value_to_level(likert_data$Response, na_label)
+    likert_data$Response <- forcats::fct_relevel(likert_data$Response, na_label)
     colors <- c(na_color, colors)
   }
 
@@ -188,10 +188,11 @@ colorFunction <- function(nc, palette_name, diverging) {
     palette_name <- ifelse(diverging == TRUE, "RdBu", "Blues")
   }
 
-  colors <- if (nc <= brewer.pal.info[palette_name, "maxcolors"]) {
-    brewer.pal(nc, palette_name)
+  colors <- if (nc <= RColorBrewer::brewer.pal.info[palette_name, "maxcolors"]) {
+    RColorBrewer::brewer.pal(nc, palette_name)
   } else {
-    colorRampPalette(brewer.pal(brewer.pal.info[palette_name, "maxcolors"], palette_name))(nc)
+    colorRampPalette(RColorBrewer::brewer.pal(RColorBrewer::brewer.pal.info[palette_name, "maxcolors"],
+                                              palette_name))(nc)
   }
 
   if (diverging && nc %% 2 == 1) {
@@ -207,7 +208,7 @@ questionReorder <- function(data, n_levels, diverging, order_by, extreme) {
   if (order_by == "negative") {
     if (diverging == TRUE) {
       reorder_data <- data |>
-        filter(Response %in% head(levels(Response), floor(n_levels / 2)))
+        dplyr::filter(Response %in% head(levels(Response), floor(n_levels / 2)))
     } else {
       warning('The levels are sequential and the order will not change. Try "extreme
               negative" instead.')
@@ -215,7 +216,7 @@ questionReorder <- function(data, n_levels, diverging, order_by, extreme) {
   } else if (order_by == "positive") {
     if (diverging == TRUE) {
       reorder_data <- data |>
-        filter(Response %in% tail(levels(Response), floor(n_levels / 2)))
+        dplyr::filter(Response %in% tail(levels(Response), floor(n_levels / 2)))
     } else {
       warning('The levels are sequential and the order will not change. Try "extreme
               positive" instead.')
@@ -229,21 +230,21 @@ questionReorder <- function(data, n_levels, diverging, order_by, extreme) {
     }
     if (order_by == "extreme negative") {
       reorder_data <- data |>
-        filter(Response %in% head(levels(Response), extreme))
+        dplyr::filter(Response %in% head(levels(Response), extreme))
     } else if (order_by == "extreme positive") {
       reorder_data <- data |>
-        filter(Response %in% tail(levels(Response), extreme))
+        dplyr::filter(Response %in% tail(levels(Response), extreme))
     }
   } else if (order_by == "missing") {
     reorder_data <- data |>
-      filter(is.na(Response))
+      dplyr::filter(is.na(Response))
   }
 
   reorder_data <- reorder_data |>
-    group_by(Question) |>
-    summarise(order_count = sum(Count))
+    dplyr::group_by(Question) |>
+    dplyr::summarise(order_count = sum(Count))
 
-  joined_data <- data |> left_join(reorder_data, by = 'Question')
+  joined_data <- data |> dplyr::left_join(reorder_data, by = 'Question')
 
   return(joined_data)
 }
