@@ -127,7 +127,7 @@ likertbar <- function(data,
     likert_data <- data |>
       tidyr::pivot_longer(cols = questions, names_to = "Question", values_to = "Response") |>
       dplyr::group_by(Question, Response) |>
-      dplyr::summarise(Count = n(), .groups = "drop")
+      dplyr::summarise(Count = dplyr::n(), .groups = "drop")
   } else {
     if (ncol(data) < 3) {
       stop("The dataframe must have at least three columns if `long_form` is TRUE.")
